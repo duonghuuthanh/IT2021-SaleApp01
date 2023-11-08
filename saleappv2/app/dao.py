@@ -1,4 +1,4 @@
-from app.models import Category, Product
+from app.models import Category, Product, User
 
 
 def get_categories():
@@ -12,3 +12,7 @@ def get_products(kw):
         products = products.filter(Product.name.contains(kw))
 
     return products.all()
+
+
+def get_user_by_id(user_id):
+    return User.query.get(user_id)
