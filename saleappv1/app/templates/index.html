@@ -2,6 +2,11 @@
 
 {% block content %}
 <section class="container">
+    <ul class="pagination mt-1">
+        {% for i in range(pages) %}
+        <li class="page-item"><a class="page-link" href="/?page={{ i + 1 }}">{{ i + 1 }}</a></li>
+        {% endfor %}
+    </ul>
     <div class="row">
         {% for p in products %}
         <div class="col-xs-12 col-md-3" style="padding: 5px;">
