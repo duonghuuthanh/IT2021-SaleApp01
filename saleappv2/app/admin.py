@@ -41,7 +41,7 @@ class MyCategoryView(AuthenticatedAdmin):
 class MyStatsView(AuthenticatedUser):
     @expose("/")
     def index(self):
-        return self.render('admin/stats.html')
+        return self.render('admin/stats.html', stats=dao.revenue_stats(), mon_stats=dao.revenue_mon_stats())
 
 
 class MyLogoutView(AuthenticatedUser):

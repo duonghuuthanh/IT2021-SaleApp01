@@ -1,8 +1,9 @@
-from app.models import Category, Product, User
+from app.models import Category, Product, User, Receipt, ReceiptDetails, Comment
 import hashlib
 from app import app, db
 import cloudinary.uploader
 from sqlalchemy import func
+from flask_login import current_user
 
 
 def get_categories():
@@ -58,8 +59,55 @@ def add_user(name, username, password, avatar):
 
 def count_products():
     return db.session.query(Category.id, Category.name, func.count(Product.id))\
-        .join(Product, Product.category_id==Category.id, isouter=True).group_by(Category.id).all()
+        .join(Product, Product.category_id.__eq__(Category.id), isouter=True).group_by(Category.id).all()
 
+
+def add_receipt(cart):
+    if cart:
+        r = Receipt(user=current_user)
+        db.session.add(r)
+
+        for c in cart.values():
+            d = ReceiptDetails(price=c['price'], quantity=c['quantity'], receipt=r, product_id=c['id'])
+            db.session.add(d)
+
+        db.session.commit()
+
+
+def revenue_stats(kw=None):
+    query = db.session.query(Product.id, Product.name, func.sum(ReceiptDetails.quantity*ReceiptDetails.price))\
+              .join(ReceiptDetails, ReceiptDetails.product_id.__eq__(Product.id))
+
+    if kw:
+        query = query.filter(Product.name.contains(kw))
+
+    return query.group_by(Product.id).all()
+
+
+def revenue_mon_stats(year=2024):
+    query = db.session.query(func.extract('month', Receipt.created_date),
+                             func.sum(ReceiptDetails.quantity*ReceiptDetails.price))\
+              .join(ReceiptDetails, ReceiptDetails.receipt_id.__eq__(Receipt.id))\
+              .filter(func.extract('year', Receipt.created_date).__eq__(year))\
+              .group_by(func.extract('month', Receipt.created_date))
+
+    return query.all()
+
+
+def get_product_by_id(id):
+    return Product.query.get(id)
+
+
+def get_comments_by_product(id):
+    return Comment.query.filter(Comment.product_id.__eq__(id)).order_by(-Comment.id).all()
+
+
+def add_comment(product_id, content):
+    c = Comment(content=content, product_id=product_id, user=current_user)
+    db.session.add(c)
+    db.session.commit()
+
+    return c
 
 if __name__ == '__main__':
     with app.app_context():

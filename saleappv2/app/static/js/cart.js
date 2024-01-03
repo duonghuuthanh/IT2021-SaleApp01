@@ -55,3 +55,47 @@ function deleteCart(id, obj) {
         });
     }
 }
+
+function pay() {
+    if (confirm("Bạn chắc chắn thanh toán") === true) {
+        fetch("/api/pay", {
+            method: "post"
+        }).then(res => res.json()).then(data => {
+            if (data.status === 200) {
+                location.reload();
+            } else
+                alert(data.err_msg)
+        })
+    }
+}
+
+function addComment(productId) {
+    if (confirm("Bạn chắc chắn thêm bình luận?") === true) {
+        fetch(`/api/products/${productId}/comments`, {
+            method: "post",
+            body: JSON.stringify({
+                "content": document.getElementById("comment").value
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(res => res.json()).then(data => {
+            if (data.status === 200) {
+                let h = document.getElementById("comments");
+                let c = data.comment;
+                h.innerHTML = `
+                    <div class="row alert alert-info">
+                        <div class="col-md-1 col-xs-4">
+                            <img src="${ c.user.avatar }" class="img-fluid rounded" />
+                        </div>
+                        <div class="col-md-11 col-xs-8">
+                            <p><strong>${c.content}</strong></p>
+                            <p>Bình luận vào lúc: <span class="date">${moment(c.created_date).locale("vi").fromNow()}</span></p>
+                        </div>
+                    </div>
+                ` + h.innerHTML;
+            } else
+                alert(data.err_msg)
+        })
+    }
+}

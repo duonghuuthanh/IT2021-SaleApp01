@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, jsonify, session
 import dao
 import utils
 from app import app, login
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user, login_required
 
 
 @app.route("/")
@@ -13,13 +13,36 @@ def index():
     cate_id = request.args.get('cate_id')
     page = request.args.get('page')
 
-    cates = dao.get_categories()
     prods = dao.get_products(kw, cate_id, page)
 
     num = dao.count_product()
 
     return render_template('index.html', products=prods,
                            pages=math.ceil(num/app.config['PAGE_SIZE']))
+
+
+@app.route("/products/<id>")
+def details(id):
+    return render_template('details.html',
+                           product=dao.get_product_by_id(id),
+                           comments=dao.get_comments_by_product(id))
+
+
+@app.route("/api/products/<id>/comments", methods=['post'])
+@login_required
+def add_comment(id):
+    try:
+        c = dao.add_comment(product_id=id, content=request.json.get('content'))
+    except Exception as ex:
+        return jsonify({"status": 500, "err_msg": str(ex)})
+    else:
+        return jsonify({"status": 200, 'comment': {
+            'content': c.content,
+            'created_date': c.created_date,
+            'user': {
+                'avatar': c.user.avatar
+            }
+        }})
 
 
 @app.route('/admin/login', methods=['post'])
@@ -148,6 +171,17 @@ def register_user():
             err_msg = 'Mật khẩu KHÔNG khớp!'
 
     return render_template('register.html', err_msg=err_msg)
+
+
+@app.route("/api/pay", methods=['post'])
+def payment():
+    try:
+        dao.add_receipt(session.get('cart'))
+    except Exception as ex:
+        return jsonify({'status': 500, "err_msg": str(ex)})
+    else:
+        del session['cart']
+        return jsonify({'status': 200})
 
 
 @login.user_loader

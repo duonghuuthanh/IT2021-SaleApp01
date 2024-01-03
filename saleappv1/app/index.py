@@ -21,6 +21,26 @@ def index():
                            pages=math.ceil(num/app.config['PAGE_SIZE']))
 
 
+@app.route('/products/<id>')
+def details(id):
+    return render_template('details.html', product=dao.get_product_by_id(id),
+                           comments=dao.get_comments_by_product(id))
+
+
+@app.route('/api/products/<id>/comments', methods=['post'])
+@login_required
+def add_comment(id):
+    try:
+        c = dao.add_comment(product_id=id, content=request.json.get('content'))
+    except Exception as ex:
+        print(ex)
+        return jsonify({'status': 500, 'err_msg': "..."})
+    else:
+        return jsonify({'status': 200, 'comment': {'content': c.content,
+                                                   'created_date': c.created_date,
+                                                   'user': {'avatar': c.user.avatar}}})
+
+
 @app.route('/admin/login', methods=['post'])
 def admin_login():
     username = request.form.get('username')
